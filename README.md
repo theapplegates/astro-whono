@@ -119,13 +119,15 @@ npm run build && npm run preview
 
 ### Theme Console（/admin）
 
-`/admin` 是 Phase 1 的 Theme Console（配置控制台），用于本地开发场景下编辑主题配置，不是 CMS。
+`/admin` 是 Phase 1 / 1.5 的 Theme Console（配置控制台），用于本地开发场景下编辑主题配置，不是 CMS。
 
 - 开发环境：`/admin/` 可操作，读取/保存 `site/home/ui` 三组配置
 - 生产环境：`/admin/` 仅显示只读提示页，不提供可写操作
 - 保存接口：`POST /api/admin/settings/`（仅 `DEV` 可写，`PROD` 固定 `404`）
 - 落盘文件：`src/data/settings/site.json`、`src/data/settings/home.json`、`src/data/settings/ui.json`
-- 白名单约束：仅允许受控字段（含 `heroPresetId`、Sidebar 固定导航项）
+- 当前已开放字段：基础站点信息、`home.quote`、`home.sidebarNav`、`home.heroPresetId`、`ui.codeBlock.showLineNumbers`、`ui.readingMode.showEntry`
+- Phase 1.5 M1：新增 `site.footer.copyright` 与 `site.socialLinks`（`github` / `x` / `email` / `rss`）
+- 白名单约束：仅允许受控字段；`rss` 固定指向站内 `/rss.xml`，不接受手填外链；Sidebar 仍只允许编辑既有导航项
 
 兼容迁移（面向已有 fork）：
 

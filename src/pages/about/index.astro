@@ -1,37 +1,93 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icon from '../../components/Icon.astro';
+import { getThemeSettings } from '../../lib/theme-settings';
+import { createWithBase } from '../../utils/format';
+
+const base = import.meta.env.BASE_URL ?? '/';
+const withBase = createWithBase(base);
+const { settings } = getThemeSettings();
+const socialLinks = settings.site.socialLinks;
+
+type SocialActionItem = {
+  key: string;
+  href: string;
+  label: string;
+  icon: 'github' | 'x-twitter' | 'mail' | 'rss';
+};
+
+type ContactItem = {
+  key: string;
+  href: string;
+  label: string;
+  icon: 'github' | 'x-twitter' | 'mail';
+  text: string;
+};
+
+const formatExternalLabel = (href: string): string => {
+  try {
+    const parsed = new URL(href);
+    const path = parsed.pathname.replace(/^\/+|\/+$/g, '');
+    return path || parsed.hostname;
+  } catch {
+    return href;
+  }
+};
+
+const socialItems: SocialActionItem[] = [
+  socialLinks.github
+    ? { key: 'github', href: socialLinks.github, label: 'GitHub', icon: 'github' as const }
+    : null,
+  socialLinks.x
+    ? { key: 'x', href: socialLinks.x, label: 'X', icon: 'x-twitter' as const }
+    : null,
+  socialLinks.email
+    ? { key: 'email', href: `mailto:${socialLinks.email}`, label: 'Email', icon: 'mail' as const }
+    : null,
+  socialLinks.rss
+    ? { key: 'rss', href: withBase('/rss.xml'), label: 'RSS', icon: 'rss' as const }
+    : null
+].filter((item): item is SocialActionItem => item !== null);
+
+const contactItems: ContactItem[] = [
+  socialLinks.email
+    ? { key: 'email', href: `mailto:${socialLinks.email}`, label: 'Email', icon: 'mail' as const, text: socialLinks.email }
+    : null,
+  socialLinks.github
+    ? {
+        key: 'github',
+        href: socialLinks.github,
+        label: 'GitHub',
+        icon: 'github' as const,
+        text: formatExternalLabel(socialLinks.github)
+      }
+    : null,
+  socialLinks.x
+    ? {
+        key: 'x',
+        href: socialLinks.x,
+        label: 'X',
+        icon: 'x-twitter' as const,
+        text: formatExternalLabel(socialLinks.x)
+      }
+    : null
+].filter((item): item is ContactItem => item !== null);
 ---
 
 <BaseLayout title="关于" bodyClass="about-page">
   <div class="page-header page-header--about">
     <h1 class="page-title">关于</h1>
-    <div class="page-actions">
-      <a
-        class="icon-link"
-        href="https://github.com/cxro/astro-whono"
-        aria-label="GitHub"
-        title="GitHub"
-      >
-        <Icon name="github" class="icon" />
-      </a>
-      <a
-        class="icon-link"
-        href="https://twitter.com/yourname"
-        aria-label="Twitter"
-        title="Twitter"
-      >
-        <Icon name="x-twitter" class="icon" />
-      </a>
-      <a
-        class="icon-link"
-        href="mailto:Whono@linux.do"
-        aria-label="Email"
-        title="Email"
-      >
-        <Icon name="mail" class="icon" />
-      </a>
-    </div>
+    {
+      socialItems.length ? (
+        <div class="page-actions">
+          {socialItems.map((item) => (
+            <a class="icon-link" href={item.href} aria-label={item.label} title={item.label}>
+              <Icon name={item.icon} class="icon" />
+            </a>
+          ))}
+        </div>
+      ) : null
+    }
   </div>
   <p class="about-intro-line">
     Whono是一个基于 Astro 的极简双栏写作主题：干净、快速、为阅读而设计。<br />
@@ -129,25 +185,26 @@ import Icon from '../../components/Icon.astro';
     </details>
   </section>
 
-  <h2 class="section-title about-section-title">联系</h2>
-  <section class="contact-block" aria-label="联系方式">
-    <p class="contact-note">如果你有问题、建议，可以通过以下方式联系</p>
-    <ul class="contact-list">
-      <li>
-        <span class="contact-link-head">
-          <Icon name="mail" class="contact-icon" />
-          <span>Email：</span>
-        </span>
-        <a href="mailto:Whono@linux.do">Whono@linux.do</a>
-      </li>
-      <li>
-        <span class="contact-link-head">
-          <Icon name="github" class="contact-icon" />
-          <span>GitHub：</span>
-        </span>
-        <a href="https://github.com/cxro/astro-whono">Whono</a>
-      </li>
-    </ul>
-  </section>
+  {
+    contactItems.length ? (
+      <>
+        <h2 class="section-title about-section-title">联系</h2>
+        <section class="contact-block" aria-label="联系方式">
+          <p class="contact-note">如果你有问题、建议，可以通过以下方式联系</p>
+          <ul class="contact-list">
+            {contactItems.map((item) => (
+              <li>
+                <span class="contact-link-head">
+                  <Icon name={item.icon} class="contact-icon" />
+                  <span>{item.label}：</span>
+                </span>
+                <a href={item.href}>{item.text}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </>
+    ) : null
+  }
 
 </BaseLayout>

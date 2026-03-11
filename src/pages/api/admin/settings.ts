@@ -8,7 +8,8 @@ import {
   type ThemeSettings
 } from '../../../lib/theme-settings';
 
-export const prerender = false;
+// DEV 需要动态 POST；PROD 构建保持静态输出，避免静态站额外依赖 adapter。
+export const prerender = import.meta.env.PROD;
 
 type WritableGroup = 'site' | 'home' | 'ui';
 type HeroPresetId = 'default' | 'minimal' | 'none';
@@ -30,10 +31,15 @@ const SETTINGS_FILES: Record<WritableGroup, string> = {
 const NAV_IDS: ReadonlyArray<SidebarNavId> = ['essay', 'bits', 'memo', 'archive', 'about'];
 const HERO_PRESETS: ReadonlySet<HeroPresetId> = new Set(['default', 'minimal', 'none']);
 const LOCALE_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GITHUB_HOSTS = ['github.com'];
+const X_HOSTS = ['x.com', 'twitter.com'];
 
-const SITE_KEYS = ['title', 'brandTitle', 'description', 'author', 'authorAvatar', 'defaultLocale'] as const;
+const SITE_KEYS = ['title', 'brandTitle', 'description', 'author', 'authorAvatar', 'defaultLocale', 'footer', 'socialLinks'] as const;
 const HOME_KEYS = ['quote', 'sidebarNav', 'heroPresetId'] as const;
 const UI_KEYS = ['codeBlock', 'readingMode'] as const;
+const FOOTER_KEYS = ['copyright'] as const;
+const SOCIAL_LINK_KEYS = ['github', 'x', 'email', 'rss'] as const;
 const CODE_BLOCK_KEYS = ['showLineNumbers'] as const;
 const READING_MODE_KEYS = ['showEntry'] as const;
 const NAV_ITEM_KEYS = ['id', 'label', 'visible', 'order'] as const;
@@ -69,6 +75,40 @@ const collectUnknownKeys = (
       errors.push(`${scope} 出现未知字段：${key}`);
     }
   }
+};
+
+const toHttpsUrl = (value: unknown, allowedHosts: readonly string[]): string | null | undefined => {
+  if (value === null) return null;
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:') return undefined;
+
+    const hostname = parsed.hostname.toLowerCase();
+    const isAllowed = allowedHosts.some(
+      (host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`)
+    );
+    if (!isAllowed) return undefined;
+
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+};
+
+const toEmailAddress = (value: unknown): string | null | undefined => {
+  if (value === null) return null;
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.replace(/^mailto:/i, '').trim();
+  return EMAIL_RE.test(normalized) ? normalized : undefined;
 };
 
 const parseNavItem = (value: unknown, errors: string[], index: number): NavInputItem | null => {
@@ -124,7 +164,11 @@ const parsePatch = (
       errors.push('site 必须是对象');
     } else {
       collectUnknownKeys('site', rawSite, SITE_KEYS, errors);
-      const nextSite = { ...current.site };
+      const nextSite = {
+        ...current.site,
+        footer: { ...current.site.footer },
+        socialLinks: { ...current.site.socialLinks }
+      };
 
       if (Object.prototype.hasOwnProperty.call(rawSite, 'title')) {
         const value = toTrimmedString(rawSite.title);
@@ -168,6 +212,66 @@ const parsePatch = (
           errors.push('site.defaultLocale 格式非法（示例：zh-CN）');
         } else {
           nextSite.defaultLocale = value;
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(rawSite, 'footer')) {
+        const rawFooter = rawSite.footer;
+        if (!isRecord(rawFooter)) {
+          errors.push('site.footer 必须是对象');
+        } else {
+          collectUnknownKeys('site.footer', rawFooter, FOOTER_KEYS, errors);
+          if (Object.prototype.hasOwnProperty.call(rawFooter, 'copyright')) {
+            const value = toTrimmedString(rawFooter.copyright);
+            if (!value) {
+              errors.push('site.footer.copyright 不能为空');
+            } else if (value.includes('\n') || value.includes('\r')) {
+              errors.push('site.footer.copyright 只允许单行文本');
+            } else if (value.length > 120) {
+              errors.push('site.footer.copyright 不能超过 120 个字符');
+            } else {
+              nextSite.footer.copyright = value;
+            }
+          }
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(rawSite, 'socialLinks')) {
+        const rawSocialLinks = rawSite.socialLinks;
+        if (!isRecord(rawSocialLinks)) {
+          errors.push('site.socialLinks 必须是对象');
+        } else {
+          collectUnknownKeys('site.socialLinks', rawSocialLinks, SOCIAL_LINK_KEYS, errors);
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'github')) {
+            const value = toHttpsUrl(rawSocialLinks.github, GITHUB_HOSTS);
+            if (value === undefined) {
+              errors.push('site.socialLinks.github 只允许 https://github.com/... 或留空');
+            } else {
+              nextSite.socialLinks.github = value;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'x')) {
+            const value = toHttpsUrl(rawSocialLinks.x, X_HOSTS);
+            if (value === undefined) {
+              errors.push('site.socialLinks.x 只允许 https://x.com/...、https://twitter.com/... 或留空');
+            } else {
+              nextSite.socialLinks.x = value;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'email')) {
+            const value = toEmailAddress(rawSocialLinks.email);
+            if (value === undefined) {
+              errors.push('site.socialLinks.email 必须是邮箱地址、mailto: 语义或留空');
+            } else {
+              nextSite.socialLinks.email = value;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(rawSocialLinks, 'rss')) {
+            const value = toBoolean(rawSocialLinks.rss);
+            if (value === undefined) {
+              errors.push('site.socialLinks.rss 必须是布尔值');
+            } else {
+              nextSite.socialLinks.rss = value;
+            }
+          }
         }
       }
 

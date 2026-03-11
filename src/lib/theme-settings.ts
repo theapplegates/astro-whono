@@ -14,6 +14,17 @@ export interface SidebarNavItem {
   order: number;
 }
 
+export interface SiteFooterSettings {
+  copyright: string;
+}
+
+export interface SiteSocialLinks {
+  github: string | null;
+  x: string | null;
+  email: string | null;
+  rss: boolean;
+}
+
 export interface SiteSettings {
   title: string;
   brandTitle: string;
@@ -21,6 +32,8 @@ export interface SiteSettings {
   author: string;
   authorAvatar: string;
   defaultLocale: string;
+  footer: SiteFooterSettings;
+  socialLinks: SiteSocialLinks;
 }
 
 export interface HomeSettings {
@@ -52,6 +65,11 @@ export interface ThemeSettingsSources {
     author: SettingSource;
     authorAvatar: SettingSource;
     defaultLocale: SettingSource;
+    footerCopyright: SettingSource;
+    socialLinksGithub: SettingSource;
+    socialLinksX: SettingSource;
+    socialLinksEmail: SettingSource;
+    socialLinksRss: SettingSource;
   };
   home: {
     quote: SettingSource;
@@ -72,6 +90,13 @@ export interface ThemeSettingsResolved {
 const SETTINGS_DIR = join(process.cwd(), 'src', 'data', 'settings');
 
 const LEGACY_QUOTE = 'A minimal Astro theme\nfor essays, notes, and docs.\nDesigned for reading,\nopen-source.';
+const LEGACY_FOOTER_COPYRIGHT = 'Whono · Theme Demo · by cxro';
+const LEGACY_SOCIAL_LINKS: SiteSocialLinks = {
+  github: 'https://github.com/cxro/astro-whono',
+  x: 'https://twitter.com/yourname',
+  email: 'Whono@linux.do',
+  rss: false
+};
 
 const LEGACY_NAV: SidebarNavItem[] = [
   { id: 'essay', label: '随笔', visible: true, order: 1 },
@@ -87,11 +112,23 @@ const DEFAULT_SITE: SiteSettings = {
   description: '一个 Astro 主题的展示站：轻量、可维护、可复用。',
   author: 'Whono',
   authorAvatar: 'author/avatar.webp',
-  defaultLocale: 'zh-CN'
+  defaultLocale: 'zh-CN',
+  footer: {
+    copyright: LEGACY_FOOTER_COPYRIGHT
+  },
+  socialLinks: {
+    github: null,
+    x: null,
+    email: null,
+    rss: false
+  }
 };
 
 const HERO_PRESETS: ReadonlySet<HeroPresetId> = new Set(['default', 'minimal', 'none']);
 const NAV_IDS: ReadonlySet<SidebarNavId> = new Set(['essay', 'bits', 'memo', 'archive', 'about']);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GITHUB_HOSTS = ['github.com'];
+const X_HOSTS = ['x.com', 'twitter.com'];
 
 const SIDEBAR_HREFS: Record<SidebarNavId, string> = {
   essay: '/essay/',
@@ -112,6 +149,40 @@ const asString = (value: unknown): string | undefined =>
 const asNonEmptyString = (value: unknown): string | undefined => {
   const next = asString(value);
   return next ? next : undefined;
+};
+
+const asHttpsUrl = (value: unknown, allowedHosts?: readonly string[]): string | null | undefined => {
+  if (value === null) return null;
+
+  const next = asString(value);
+  if (next === undefined) return undefined;
+  if (!next) return null;
+
+  try {
+    const parsed = new URL(next);
+    if (parsed.protocol !== 'https:') return undefined;
+    if (allowedHosts?.length) {
+      const hostname = parsed.hostname.toLowerCase();
+      const isAllowed = allowedHosts.some(
+        (host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`)
+      );
+      if (!isAllowed) return undefined;
+    }
+    return parsed.toString();
+  } catch {
+    return undefined;
+  }
+};
+
+const asEmailAddress = (value: unknown): string | null | undefined => {
+  if (value === null) return null;
+
+  const next = asString(value);
+  if (next === undefined) return undefined;
+  if (!next) return null;
+
+  const normalized = next.replace(/^mailto:/i, '').trim();
+  return EMAIL_RE.test(normalized) ? normalized : undefined;
 };
 
 const asBoolean = (value: unknown): boolean | undefined =>
@@ -187,6 +258,8 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
   const siteJson = readSettingsObject('site');
   const homeJson = readSettingsObject('home');
   const uiJson = readSettingsObject('ui');
+  const siteFooterJson = isRecord(siteJson?.footer) ? siteJson.footer : undefined;
+  const siteSocialLinksJson = isRecord(siteJson?.socialLinks) ? siteJson.socialLinks : undefined;
 
   const title = resolveValue(
     asNonEmptyString(siteJson?.title),
@@ -217,6 +290,31 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
     asNonEmptyString(siteJson?.defaultLocale),
     undefined,
     DEFAULT_SITE.defaultLocale
+  );
+  const footerCopyright = resolveValue(
+    asNonEmptyString(siteFooterJson?.copyright),
+    LEGACY_FOOTER_COPYRIGHT,
+    DEFAULT_SITE.footer.copyright
+  );
+  const socialLinksGithub = resolveValue(
+    asHttpsUrl(siteSocialLinksJson?.github, GITHUB_HOSTS),
+    LEGACY_SOCIAL_LINKS.github,
+    DEFAULT_SITE.socialLinks.github
+  );
+  const socialLinksX = resolveValue(
+    asHttpsUrl(siteSocialLinksJson?.x, X_HOSTS),
+    LEGACY_SOCIAL_LINKS.x,
+    DEFAULT_SITE.socialLinks.x
+  );
+  const socialLinksEmail = resolveValue(
+    asEmailAddress(siteSocialLinksJson?.email),
+    LEGACY_SOCIAL_LINKS.email,
+    DEFAULT_SITE.socialLinks.email
+  );
+  const socialLinksRss = resolveValue(
+    asBoolean(siteSocialLinksJson?.rss),
+    LEGACY_SOCIAL_LINKS.rss,
+    DEFAULT_SITE.socialLinks.rss
   );
 
   const quote = resolveValue(
@@ -258,7 +356,16 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
         description: description.value,
         author: author.value,
         authorAvatar: authorAvatar.value,
-        defaultLocale: defaultLocale.value
+        defaultLocale: defaultLocale.value,
+        footer: {
+          copyright: footerCopyright.value
+        },
+        socialLinks: {
+          github: socialLinksGithub.value,
+          x: socialLinksX.value,
+          email: socialLinksEmail.value,
+          rss: socialLinksRss.value
+        }
       },
       home: {
         quote: quote.value,
@@ -281,7 +388,12 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
         description: description.source,
         author: author.source,
         authorAvatar: authorAvatar.source,
-        defaultLocale: defaultLocale.source
+        defaultLocale: defaultLocale.source,
+        footerCopyright: footerCopyright.source,
+        socialLinksGithub: socialLinksGithub.source,
+        socialLinksX: socialLinksX.source,
+        socialLinksEmail: socialLinksEmail.source,
+        socialLinksRss: socialLinksRss.source
       },
       home: {
         quote: quote.source,

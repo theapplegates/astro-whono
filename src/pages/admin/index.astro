@@ -97,6 +97,32 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
                 <span class="admin-label">默认语言</span>
                 <input id="site-default-locale" type="text" autocomplete="off" />
               </label>
+              <label class="admin-field admin-field--full">
+                <span class="admin-label">页脚版权行（自动附加年份）</span>
+                <input id="site-footer-copyright" type="text" autocomplete="off" />
+              </label>
+            </div>
+
+            <div class="admin-subgroup">
+              <p class="admin-subtitle">Social Links</p>
+              <div class="admin-grid">
+                <label class="admin-field">
+                  <span class="admin-label">GitHub 链接</span>
+                  <input id="site-social-github" type="url" inputmode="url" autocomplete="off" />
+                </label>
+                <label class="admin-field">
+                  <span class="admin-label">X / Twitter 链接</span>
+                  <input id="site-social-x" type="url" inputmode="url" autocomplete="off" />
+                </label>
+                <label class="admin-field">
+                  <span class="admin-label">Email</span>
+                  <input id="site-social-email" type="email" inputmode="email" autocomplete="off" />
+                </label>
+                <label class="admin-toggle-row">
+                  <input id="site-social-rss" type="checkbox" />
+                  <span>显示 RSS 链接（固定指向站内 /rss.xml）</span>
+                </label>
+              </div>
             </div>
           </fieldset>
 
@@ -200,6 +226,9 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
   const NAV_IDS = ['essay', 'bits', 'memo', 'archive', 'about'];
   const HERO_PRESETS = new Set(['default', 'minimal', 'none']);
   const LOCALE_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const GITHUB_HOSTS = ['github.com'];
+  const X_HOSTS = ['x.com', 'twitter.com'];
 
   const form = document.getElementById('admin-form');
   const statusEl = document.getElementById('admin-status');
@@ -220,6 +249,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
   const inputSiteAuthor = document.getElementById('site-author');
   const inputSiteAuthorAvatar = document.getElementById('site-author-avatar');
   const inputSiteDefaultLocale = document.getElementById('site-default-locale');
+  const inputSiteFooterCopyright = document.getElementById('site-footer-copyright');
+  const inputSiteSocialGithub = document.getElementById('site-social-github');
+  const inputSiteSocialX = document.getElementById('site-social-x');
+  const inputSiteSocialEmail = document.getElementById('site-social-email');
+  const inputSiteSocialRss = document.getElementById('site-social-rss');
   const inputHomeQuote = document.getElementById('home-quote');
   const inputHeroPreset = document.getElementById('home-hero-preset');
   const inputCodeLineNumbers = document.getElementById('ui-code-line-numbers');
@@ -232,6 +266,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
     !inputSiteAuthor ||
     !inputSiteAuthorAvatar ||
     !inputSiteDefaultLocale ||
+    !inputSiteFooterCopyright ||
+    !inputSiteSocialGithub ||
+    !inputSiteSocialX ||
+    !inputSiteSocialEmail ||
+    !inputSiteSocialRss ||
     !inputHomeQuote ||
     !inputHeroPreset ||
     !inputCodeLineNumbers ||
@@ -244,9 +283,20 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
   const deepClone = (value) => JSON.parse(JSON.stringify(value));
 
   const normalizeMultiline = (value) => value.replace(/\r\n/g, '\n');
+  const normalizeEmail = (value) => value.replace(/^mailto:/i, '').trim();
   const parseOrder = (value, fallback) => {
     const next = Number.parseInt(value, 10);
     return Number.isFinite(next) ? next : fallback;
+  };
+  const isAllowedHttpsUrl = (value, hosts) => {
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== 'https:') return false;
+      const hostname = parsed.hostname.toLowerCase();
+      return hosts.some((host) => hostname === host || hostname === `www.${host}` || hostname.endsWith(`.${host}`));
+    } catch {
+      return false;
+    }
   };
 
   let baseline = null;
@@ -312,7 +362,16 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
         description: normalizeMultiline(inputSiteDescription.value).trim(),
         author: inputSiteAuthor.value.trim(),
         authorAvatar: inputSiteAuthorAvatar.value.trim(),
-        defaultLocale: inputSiteDefaultLocale.value.trim()
+        defaultLocale: inputSiteDefaultLocale.value.trim(),
+        footer: {
+          copyright: inputSiteFooterCopyright.value.trim()
+        },
+        socialLinks: {
+          github: inputSiteSocialGithub.value.trim() || null,
+          x: inputSiteSocialX.value.trim() || null,
+          email: normalizeEmail(inputSiteSocialEmail.value.trim()) || null,
+          rss: Boolean(inputSiteSocialRss.checked)
+        }
       },
       home: {
         quote: normalizeMultiline(inputHomeQuote.value).trim(),
@@ -337,6 +396,11 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
     inputSiteAuthor.value = settings.site.author || '';
     inputSiteAuthorAvatar.value = settings.site.authorAvatar || '';
     inputSiteDefaultLocale.value = settings.site.defaultLocale || '';
+    inputSiteFooterCopyright.value = settings.site.footer?.copyright || '';
+    inputSiteSocialGithub.value = settings.site.socialLinks?.github || '';
+    inputSiteSocialX.value = settings.site.socialLinks?.x || '';
+    inputSiteSocialEmail.value = settings.site.socialLinks?.email || '';
+    inputSiteSocialRss.checked = Boolean(settings.site.socialLinks?.rss);
     inputHomeQuote.value = settings.home.quote || '';
     inputHeroPreset.value = settings.home.heroPresetId || 'default';
     inputCodeLineNumbers.checked = Boolean(settings.ui?.codeBlock?.showLineNumbers);
@@ -367,6 +431,13 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
     } else if (!LOCALE_RE.test(settings.site.defaultLocale)) {
       errors.push('默认语言格式无效（示例：zh-CN）');
     }
+    if (!settings.site.footer?.copyright) {
+      errors.push('页脚版权行不能为空');
+    } else if (settings.site.footer.copyright.includes('\n') || settings.site.footer.copyright.includes('\r')) {
+      errors.push('页脚版权行只允许单行文本');
+    } else if (settings.site.footer.copyright.length > 120) {
+      errors.push('页脚版权行不能超过 120 个字符');
+    }
 
     if (settings.site.authorAvatar) {
       if (settings.site.authorAvatar.startsWith('/')) {
@@ -375,6 +446,19 @@ const bootstrapJson = JSON.stringify(initialPayload).replace(/</g, '\\u003c');
       if (/^[A-Za-z]+:\/\//.test(settings.site.authorAvatar)) {
         errors.push('作者头像 Phase 1 仅允许相对路径，不允许 URL');
       }
+    }
+
+    if (settings.site.socialLinks?.github && !isAllowedHttpsUrl(settings.site.socialLinks.github, GITHUB_HOSTS)) {
+      errors.push('GitHub 链接只允许 https://github.com/... ');
+    }
+    if (settings.site.socialLinks?.x && !isAllowedHttpsUrl(settings.site.socialLinks.x, X_HOSTS)) {
+      errors.push('X / Twitter 链接只允许 https://x.com/... 或 https://twitter.com/... ');
+    }
+    if (settings.site.socialLinks?.email && !EMAIL_RE.test(normalizeEmail(settings.site.socialLinks.email))) {
+      errors.push('Email 必须是合法邮箱地址');
+    }
+    if (typeof settings.site.socialLinks?.rss !== 'boolean') {
+      errors.push('RSS 显示开关必须是布尔值');
     }
 
     if (!settings.home.quote) errors.push('侧栏引用文案不能为空');

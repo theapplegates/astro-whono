@@ -20,6 +20,7 @@ const brandTitle = settings.site.brandTitle ?? siteTitle;
 const metaDescription = description ?? settings.site.description;
 const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 const htmlLang = settings.site.defaultLocale || 'zh-CN';
+const footerCopyright = settings.site.footer.copyright;
 const showCodeLineNumbers = settings.ui.codeBlock.showLineNumbers;
 const canonical = (hasSiteUrl && Astro.site)
   ? new URL(Astro.url.pathname, Astro.site).toString()
@@ -75,7 +76,7 @@ const withBase = createWithBase(base);
       <main id="content" class="content" tabindex="-1">
         <div class="content__inner">
           <slot />
-          <footer class="site-footer">© {yearRange} Whono · Theme Demo · by cxro</footer>
+          <footer class="site-footer">© {yearRange} {footerCopyright}</footer>
         </div>
       </main>
     </div>
