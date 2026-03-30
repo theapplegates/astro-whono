@@ -36,9 +36,9 @@
     "new:bit": "node ./scripts/new-bit.mjs"
   },
   "dependencies": {
-    "@astrojs/rss": "^4.0.17",
-    "@astrojs/sitemap": "^3.7.1",
-    "astro": "^6.0.8"
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.2",
+    "astro": "^6.1.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
@@ -50,16 +50,22 @@
     "remark-directive": "^4.0.0",
     "typescript": "^5.9.3",
     "unist-util-visit": "^5.0.0",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.2"
   },
   "overrides": {
     "ajv": "8.18.0",
+    "anymatch": {
+      "picomatch": "2.3.2"
+    },
     "devalue": "5.6.4",
     "fast-xml-parser": "5.5.7",
     "h3": "1.15.9",
+    "picomatch": "4.0.4",
     "rollup": "4.59.0",
+    "smol-toml": "1.6.1",
     "svgo": "4.0.1",
     "volar-service-yaml": "0.0.70",
+    "yaml": "2.8.3",
     "yaml-language-server": "1.20.0"
   }
 }
