@@ -1,11 +1,11 @@
 {
   "title": "Astro Themes by Whono",
   "description": "一个 Astro 主题的展示站：轻量、可维护、可复用。",
-  "defaultLocale": "zh-CN",
+  "defaultLocale": "US",
   "footer": {
-    "startYear": 2025,
+    "startYear": 2026,
     "showCurrentYear": true,
-    "copyright": "Whono · Theme Demo · by cxro"
+    "copyright": "Living Life Paul Applegate"
   },
   "socialLinks": {
     "github": "https://github.com/cxro/astro-whono",
