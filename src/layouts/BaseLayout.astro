@@ -52,6 +52,7 @@ const withBase = createWithBase(base);
 <!doctype html>
 <html lang={htmlLang}>
   <head>
+  <script src="https://kit.fontawesome.com/d0ae9b51eb.js" crossorigin="anonymous"></script>
     <script is:inline>
       (() => {
         const key = 'theme';
@@ -109,8 +110,14 @@ const withBase = createWithBase(base);
       <main id="content" class="content" tabindex="-1">
         <div class="content__inner">
           <slot />
-          <footer class="site-footer">© {yearRange} {footerCopyright}</footer>
-        </div>
+<footer class="site-footer">
+            © {yearRange} {footerCopyright}
+            <a href="https://whono.paulapplegate.com/files/Paul_Applegate_0xF485767D3ED04A421F31192BD407C387E9C913F09D99D2CEF1978736211D08EC_public.asc">
+              <i class="fa-graphite fa-thin fa-key"></i>
+              F485767D3ED04A421F31192BD407C387E9C913F09D99D2CEF1978736211D08EC
+            </a>
+          </footer>
+                  </div>
       </main>
     </div>
     <template id="scroll-top-template">

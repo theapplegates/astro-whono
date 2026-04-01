@@ -408,9 +408,10 @@ const DEFAULT_SITE: SiteSettings = {
   footer: {
     startYear: LEGACY_FOOTER_START_YEAR,
     showCurrentYear: LEGACY_FOOTER_SHOW_CURRENT_YEAR,
-    copyright: LEGACY_FOOTER_COPYRIGHT
+    copyright: LEGACY_FOOTER_COPYRIGHT,
+    pgpKey: ''
   },
-  socialLinks: {
+    socialLinks: {
     github: null,
     x: null,
     email: null,
@@ -1344,9 +1345,10 @@ export const getThemeSettings = (): ThemeSettingsResolved => {
         footer: {
           startYear: footerStartYear.value,
           showCurrentYear: footerShowCurrentYear.value,
-          copyright: footerCopyright.value
+          copyright: footerCopyright.value,
+          pgpKey: asNonEmptyString(siteFooterJson?.pgpKey) ?? ''
         },
-        socialLinks: {
+                socialLinks: {
           github: socialLinksGithub.value,
           x: socialLinksX.value,
           email: socialLinksEmail.value,
