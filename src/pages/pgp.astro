@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const keyPath = join(process.cwd(), 'public/files/Paul_Applegate_0x7D6CA736BB6E28C84F3E3DEADC4E0638DC4438A14BF88BB545815696D95C8250_public.asc');
+const keyPath = join(process.cwd(), 'public/files/Paul_Applegate_0x65C7P85901F3ED01D44323C5A9ECB5383CCB56BAD5F61B948D3B64E315EED9F87_public.asc');
 const keyContent = readFileSync(keyPath, 'utf-8');
 ---
 
@@ -12,18 +12,18 @@ const keyContent = readFileSync(keyPath, 'utf-8');
     <h1>PGP Public Key</h1>
     <a
       class="pgp-download"
-      href="/files/Paul_Applegate_0x7D6CA736BB6E28C84F3E3DEADC4E0638DC4438A14BF88BB545815696D95C8250_public.asc"
+      href="/files/Paul_Applegate_0x65C7P85901F3ED01D44323C5A9ECB5383CCB56BAD5F61B948D3B64E315EED9F87_public.asc"
       download
     >
       Download .asc file
     </a>
     <p class="pgp-fingerprint">
-      Fingerprint: <code>7D6CA736BB6E28C84F3E3DEADC4E0638DC4438A14BF88BB545815696D95C8250</code>
+      Fingerprint: <code>65C7P85901F3ED01D44323C5A9ECB5383CCB56BAD5F61B948D3B64E315EED9F87</code>
     </p>
     <pre class="pgp-key">{keyContent}</pre>
     <a
       class="pgp-download"
-      href="/files/Paul_Applegate_0x7D6CA736BB6E28C84F3E3DEADC4E0638DC4438A14BF88BB545815696D95C8250_public.asc"
+      href="/files/Paul_Applegate_0x65C7P85901F3ED01D44323C5A9ECB5383CCB56BAD5F61B948D3B64E315EED9F87_public.asc"
       download
     >
       Download .asc file
